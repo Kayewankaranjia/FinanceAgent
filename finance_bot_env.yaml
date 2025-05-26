@@ -1,0 +1,40 @@
+name: finance_bot_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12  # Specify the Python version
+  - numpy
+  - pip         # Include pip support
+  - pip:
+    - h11==0.16.0
+    - httpcore==1.0.9
+    - jiter==0.9.1
+    - jsonpointer==2.1
+    - langchain-core==0.3.60
+    - langchain-openai==0.3.17
+    - langgraph==0.4.5
+    - langgraph-api==0.2.27
+    - langgraph-checkpoint==2.0.26
+    - langgraph-cli==0.2.10
+    - langgraph-prebuilt==0.1.8
+    - langgraph-runtime-inmem==0.0.11
+    - langgraph-sdk==0.1.69
+    - langsmith==0.3.42
+    - numpy==2.2.6
+    - openai==1.79.0
+    - orjson==3.10.18
+    - ormsgpack==1.9.1
+    - pandas==2.2.3
+    - pydantic
+    - xxhash==3.5.0
+    - zstandard==0.22.0
+
+
+
+
+
+
+
+
+
