@@ -162,3 +162,6 @@ cython_debug/
 #.idea/
 uv.lock
 .langgraph_api/
+src/agent/__pycache__/graph.cpython-313.pyc
+src/agent/__pycache__/prompts.cpython-313.pyc
+src/data/train.json
