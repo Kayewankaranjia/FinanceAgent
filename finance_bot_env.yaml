@@ -29,6 +29,10 @@ dependencies:
     - pydantic
     - xxhash==3.5.0
     - zstandard==0.23.0
+    - openevals
+    - neo4j
+    - dotenv
+    
 
 
 
