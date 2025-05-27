@@ -72,31 +72,6 @@ def fetch_filename_from_neo4j(metricname:str , timeframe: list) -> str:
     print("timeframme from in tool", timeframe)
     query_embedding = openai_embeddings.embed_query(metricname)
 
-#     query = """
-# MATCH (node:Cell)
-# WITH node, vector.similarity.cosine($QueryEmbedding, node.cell_embedding) AS score
-# RETURN node.id
-# ORDER BY score DESCENDING
-# LIMIT 1;
-#         """
-
-    # query = f""" 
-    # WITH {timeframe}  AS years
-    # MATCH (cell:Cell)
-    # WHERE ANY(year IN years WHERE cell.value CONTAINS year)
-    # WITH cell, vector.similarity.cosine($QueryEmbedding, cell.cell_embedding) AS score
-    # ORDER BY score DESC  LIMIT 3
-    # MATCH (cell)<-[:HAS_CELL]-(row:TableRow)<-[:HAS_ROW]-(table:Table)<-[:HAS_TABLE]-(doc:Document)
-    # RETURN DISTINCT doc.filename AS filename"""
-
-    # query = """ 
-    # MATCH (cell:Cell)
-    # WITH cell, vector.similarity.cosine($QueryEmbedding, cell.cell_embedding) AS score
-    # ORDER BY score DESC
-    # LIMIT 3
-    # MATCH (cell)<-[:HAS_CELL]-(row:TableRow)<-[:HAS_ROW]-(table:Table)<-[:HAS_TABLE]-(doc:Document)
-    # RETURN doc.filename AS filename"""
-
     query = f"""WITH  	{timeframe}  AS years
 // Step 1: Collect every cell and its text group by table
 MATCH (c:Cell)<-[:HAS_CELL]-(row:TableRow)<-[:HAS_ROW]-(table:Table)
@@ -118,12 +93,9 @@ MATCH (table)<-[:HAS_TABLE]-(doc:Document)
 RETURN DISTINCT doc.filename AS filename"""
 
     result = driver.execute_query(query,  QueryEmbedding =  query_embedding)
-    print(f"Result from Neo4j: {result}")
-
     try:
         records = result.records if hasattr(result, 'records') else result
         # Neo4j returns a list of Record objects; access the 'filename' field
-        # Collect all filenames from the records (up to 3)
         filenames = []
         for record in records:
             if hasattr(record, 'data'):
@@ -164,7 +136,7 @@ def get_data_from_training_data(filename: list) -> pd.DataFrame:
     # filter for the row(s) where filename equals our target
     filename_to_find = filename.strip()
     result_df = df_unique[df_unique['filename'] == filename_to_find]
-    print("resultdf", result_df)
+    print("resultdf", result_df.head())
     return result_df
 
 llm_with_tool = llm.bind_tools([user_question_tool])
@@ -174,24 +146,8 @@ def domain_state_tracker(messages: List[HumanMessage]) -> List[SystemMessage]:
 
 def call_llm(state: State):
     messages = domain_state_tracker(state["messages"])
-    
     response = llm_with_tool.invoke(messages)
-
-    # userquestion = UserQuestion(response.content)
-    # print(f"User question: {userquestion}")
     return {"messages": [response]}
-
-def route_after_call_llm(state: State) -> str:
-    """
-    Decide where to go after call_llm:
-    - If the last message has a tool call, go to process_user_question.
-    - Otherwise, go back to call_llm (or another node to collect more info).
-    """
-    last_message = state["messages"][-1]
-    # Check if the LLM response includes a tool call
-    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
-        return "process_user_question"
-    return "call_llm"
 
 def process_user_question(state: State):
      tool_args = state["messages"][-1].tool_calls[0]["args"]
@@ -212,6 +168,18 @@ def process_user_question(state: State):
         ]
     }
 
+def route_after_call_llm(state: State) -> str:
+    """
+    Decide where to go after call_llm:
+    - If the last message has a tool call, go to process_user_question.
+    - Otherwise, go back to call_llm (or another node to collect more info).
+    """
+    last_message = state["messages"][-1]
+    # Check if the LLM response includes a tool call
+    if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        return "process_user_question"
+    return "call_llm"
+
 def get_filename(state: State):
 
     """
@@ -226,8 +194,7 @@ def get_filename(state: State):
     store.put(
         namespace="user_question",
         key="user_question",
-        value=user_data.question
-        
+        value=user_data.question        
     )
     store.put(
         namespace="user_question",
@@ -277,8 +244,6 @@ def process_filename(state: State):
         ]
     }
 
-   
-
 def generate_components(state):
     messages = domain_state_tracker(state["messages"])
     # Extract the last HumanMessage content (assumed to be a JSON string)
@@ -288,14 +253,9 @@ def generate_components(state):
         key="user_question"
     )
     
-    messages = [SystemMessage(content=prompt_templates.components_prompt.format(question=userquestion))]
-    
+    messages = [SystemMessage(content=prompt_templates.components_prompt.format(question=userquestion))]    
     result = llm.invoke(messages)
-
-    print("Result form LLMS :" , result.content)
-
     # Clean up the result.content string to extract the JSON object
-
     # Remove python code block markers and whitespace
     content_str = str(result.content)
     content_str = re.sub(r"^```python\s*|```$", "", content_str.strip(), flags=re.MULTILINE)
@@ -306,10 +266,6 @@ def generate_components(state):
         result_dict = ast.literal_eval(content_str)
     except Exception:
         result_dict = {}
-
-    print(result_dict)
-
-   
     store.put(
         namespace="user_question",
         key="Operation to be Performed",
@@ -322,10 +278,7 @@ def generate_components(state):
     )
     
    
-    return{
-        "messages": [{"componenets" : result_dict}]
-        
-    }
+    return {"messages": [{"componenets" : result_dict}]}
 
 
 def fetch_data(state: State):
@@ -345,23 +298,17 @@ def fetch_data(state: State):
 
     big_data = big_data.to_string()
 
-    
-
-    print("Big data", big_data)
     messages = prompt_templates.retrive_prompt.format(components=components, data=big_data)
     result = llm.invoke(messages)
 
     print("Fetch Data result", result)
-   
     data = result
-
     return {"messages": [data]}
 
 def formula_agent_node(state: State):
     """
     Fetches formulas based on the topic identified in the previous step.Return a single or multiple formulas whih can be used to calculate the financial metric.
-    """
-   
+    """   
     messages = state["messages"]
     messages.append(SystemMessage(content=prompt_templates.math_formula_prompt.format(response=state["messages"][-1].content)))
     messages.append(HumanMessage(content="What is the formula for the metric?"))
@@ -376,9 +323,7 @@ def calculator_agent_node(state: State):
     messages = domain_state_tracker(state["messages"])
     messages.append(HumanMessage(content="Calculate the financial metric using the formula created in the previous step for the opration mentioned"))
     messages.append(SystemMessage(content="You are a calculator agent. You will be given a math expression to evaluate. Pass the expression to the calculator tool and return the result."))
-    
     llm_with_tool = llm.bind_tools([basic_calculator_tool])
-
     result = llm_with_tool.invoke(messages)
     print("cal agent", result)
     return {"messages": [result]}
@@ -410,10 +355,7 @@ def call_model_to_printfinalmessage(state):
         key="user_question"
     )
     messages = prompt_templates.final_message_prompt.format(userquestion=userquestion, answer=calresult)
-    result = llm.invoke(messages)
-
-    print("call_model_to_printfinalmessage", result)
-
+    result = llm.invoke(messages) #Not returning the result as a message, to make evaulabtion work better
     return {"messages": [calresult]}
 
 
