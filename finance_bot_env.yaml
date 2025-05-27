@@ -32,7 +32,7 @@ dependencies:
     - openevals
     - neo4j
     - dotenv
-    
+    - langchain_neo4j
 
 
 

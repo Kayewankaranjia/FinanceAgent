@@ -136,7 +136,6 @@ def get_data_from_training_data(filename: list) -> pd.DataFrame:
     # filter for the row(s) where filename equals our target
     filename_to_find = filename.strip()
     result_df = df_unique[df_unique['filename'] == filename_to_find]
-    print("resultdf", result_df.head())
     return result_df
 
 llm_with_tool = llm.bind_tools([user_question_tool])
@@ -213,19 +212,12 @@ def get_filename(state: State):
     )
 
     messages = [SystemMessage(content=prompt_templates.file_name_prompt.format(metric=user_data.metric, timeframe=user_data.timeframe))] 
-    
     llm_with_tool = llm.bind_tools([fetch_filename_from_neo4j])
-
     result = llm_with_tool.invoke(messages)
-    print("IN TEResult", result)
     return {"messages": [result]}
 
 def process_filename(state: State):
     tool_args = state["messages"][-1].tool_calls[0]["args"]
-    # timeframe = store.get( namespace="user_question",
-    #     key="timeframe")
-    # input = {'metricname': tool_args, 'timeframe': timeframe.value}
-    # print(f"in Tool args: {input}")
     last_tool_result = fetch_filename_from_neo4j(tool_input = tool_args)
     user_data  = tool_args
     user_data["filename"] = last_tool_result
@@ -293,7 +285,6 @@ def fetch_data(state: State):
     for filename in filenames: 
         print ("filennname:", filename)
         data = get_data_from_training_data(filename=filename)
-        print("Datad", data)
         big_data = pd.concat([big_data, data], ignore_index=True)
 
     big_data = big_data.to_string()
@@ -301,7 +292,6 @@ def fetch_data(state: State):
     messages = prompt_templates.retrive_prompt.format(components=components, data=big_data)
     result = llm.invoke(messages)
 
-    print("Fetch Data result", result)
     data = result
     return {"messages": [data]}
 
@@ -325,14 +315,11 @@ def calculator_agent_node(state: State):
     messages.append(SystemMessage(content="You are a calculator agent. You will be given a math expression to evaluate. Pass the expression to the calculator tool and return the result."))
     llm_with_tool = llm.bind_tools([basic_calculator_tool])
     result = llm_with_tool.invoke(messages)
-    print("cal agent", result)
     return {"messages": [result]}
 
 def process_calculatortool(state: State):
     tool_args = state["messages"][-1].tool_calls[0]["args"]
-    print(f"in Tool args: {tool_args["expression"]}")
     last_tool_result = basic_calculator_tool(tool_input = tool_args["expression"])
-    print(f"Last tool result(Calc Tool): {last_tool_result}")
     store.put(
         namespace="user_question",
         key="calculated_result",
