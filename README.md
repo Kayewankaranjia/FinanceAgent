@@ -31,6 +31,6 @@ langgraph dev
 This should open up langgraph studio. Debug with a sample question 
 
 # Run Eval 
-Navigate to src/tests/langgraph_eval
-Execute all cells in eval.ipynb 
-This will create a new dataset and experiment in langsmith studio
+- Navigate to src/tests/langgraph_eval
+- Execute all cells in eval.ipynb 
+- This will create a new dataset and experiment in langsmith studio
