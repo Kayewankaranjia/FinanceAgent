@@ -1,48 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import List
 import json
-from CypherGenerator.utils.cypher_utils import CypherUtils
-from CypherGenerator.models.data_model import DocumentData, QA, ReasoningStep
-# # === Data Models ===
-
-# class ReasoningStep(BaseModel):
-#     op: str
-#     arg1: str
-#     arg2: str
-#     res: str
-
-
-# class QA(BaseModel):
-#     question: str
-#     answer: str
-#     ann_table_rows: List[int] = Field(default_factory=list)
-#     steps: List[ReasoningStep] = Field(default_factory=list)
-
-
-# class DocumentData(BaseModel):
-#     id: str
-#     filename: str
-#     pre_text: List[str]
-#     post_text: List[str]
-#     table: List[List[str]]
-#     qa: QA
-
-
-# === Cypher Utilities ===
-
-# class CypherUtils:
-
-#     @staticmethod
-#     def create_node(label: str, properties: dict) -> str:
-#         props = ', '.join([f"{k}: {json.dumps(v)}" for k, v in properties.items()])
-#         return f"MERGE (:{label} {{{props}}});"
-
-#     @staticmethod
-#     def create_relationship(source_label: str, source_id: str, target_label: str, target_id: str, rel_type: str) -> str:
-#         return f"MATCH (a:{source_label} {{id: '{source_id}'}}), (b:{target_label} {{id: '{target_id}'}}) MERGE (a)-[:{rel_type}]->(b);"
-
-
-# === Specific Data Handlers ===
+import os
+os.chdir(r"c:\Work\Tomoro\FinanceAgent")
+from src.CypherGenerator.utils.cypher_utils import CypherUtils
+from src.CypherGenerator.models.data_model import DocumentData, QA, ReasoningStep
 
 class CypherGenerator:
     def __init__(self, data: DocumentData):
