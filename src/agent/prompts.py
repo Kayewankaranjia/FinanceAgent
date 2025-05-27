@@ -33,8 +33,11 @@ class PromptTemplates:
                 Usually, the values will be in data['table']. 
                 The table is a matrix of values with the first column as the timeframe year or month and the rest of the columns have column names as the metric names.
                 The values are usually after the first row of the table.
-
-                Return the actual valus for the components
+                Be specific with the metrics and od not make assumptions. Eg. Net revenue and net sales are different. 
+                
+                There may be time you will get mutiple data points that satisfy the question, use the pre ad post text values in the data to confim with the user which values they want to use. 
+                
+                Return just the actual valus for the components for confirmed metrics 
             """,
             input_variables=["components", "data"]
         )
@@ -43,7 +46,7 @@ class PromptTemplates:
             template="""
                 For the given {response}, create a formula to calculate the financial metric.
                 The formula should be in the form of a string that can be evaluated using eval() function in python.
-                The formula should be a simple arithmetic expression like 2 + 3 * 4
+                The formula should be a simple arithmetic expression like 2 + 3 * 4. Always use the values from the data provided in the response and not strings or names 
                 Example:    
                 Output:
                     "Percentage Change in Net Sales from 2002 to 2003" = ( <Value of Net Sales for  2003> - <Value of Net Sales for  2002>) /  <Value of Net Sales for  2003> * 100
@@ -60,7 +63,7 @@ class PromptTemplates:
 
         self.file_name_prompt = PromptTemplate(    
     template="""
-        For the requested {metric}, identify the relevant file name from the database.
+        For the requested {metric} and {timeframe}, identify the relevant file name from the database.
      Use the required tools to fetch the file name from the database.
      return the values in a dictionary format with the keys as file_name
     """
